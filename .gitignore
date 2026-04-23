@@ -179,3 +179,23 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# ============================================================
+# IMTI-specific
+# ============================================================
+
+# Environment — NEVER commit .env with real keys
+.env.local
+.env.production
+
+# Data — most data IS committed for persistence, but raw cache and errors are not
+data/raw/*/
+data/errors/
+data/source-health/
+
+# Models (large files — use Git LFS or .gitattributes)
+data/models/*.json
+
+# OS
+.DS_Store
+Thumbs.db

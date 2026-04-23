@@ -1,0 +1,63 @@
+name: Daily IMTI Train & Blog
+
+on:
+  schedule:
+    # Run at 00:30 IST (19:00 UTC previous day)
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+jobs:
+  daily-pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -e "."  # Full install including xgboost, shap, etc.
+
+      - name: Run daily pipeline
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_BASE_URL: ${{ secrets.LLM_API_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_MAX_TOKENS: ${{ secrets.LLM_MAX_TOKENS }}
+          SEARCH_GOOGLE_API_KEY: ${{ secrets.SEARCH_GOOGLE_API_KEY }}
+          SEARCH_GOOGLE_CX: ${{ secrets.SEARCH_GOOGLE_CX }}
+          SEARCH_TAVILY_API_KEY: ${{ secrets.SEARCH_TAVILY_API_KEY }}
+          SEARCH_BRAVE_API_KEY: ${{ secrets.SEARCH_BRAVE_API_KEY }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          IMTI_ENABLE_EMAIL: ${{ secrets.IMTI_ENABLE_EMAIL }}
+          IMTI_ENABLE_LLM: ${{ secrets.IMTI_ENABLE_LLM }}
+          IMTI_ENABLE_DEPLOY: ${{ secrets.IMTI_ENABLE_DEPLOY }}
+          IMTI_ENABLE_NEWS_SEARCH: ${{ secrets.IMTI_ENABLE_NEWS_SEARCH }}
+          IMTI_ENABLE_BLOG_GENERATION: true
+          IMTI_LOG_LEVEL: INFO
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uv run imti daily
+
+      - name: Commit and push daily data
+        run: |
+          git config user.name "IMTI Bot"
+          git config user.email "imti-bot@users.noreply.github.com"
+          git add data/ website/ README.md || true
+          git diff --quiet && git diff --staged --quiet || git commit -m "📦 IMTI daily update $(date +%Y-%m-%d)"
+          git push || true

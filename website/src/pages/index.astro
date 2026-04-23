@@ -1,0 +1,144 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Read latest API data
+let apiData: any = { score: 50, zone: 'neutral', action: 'NEUTRAL', confidence: 0.5, timestamp: new Date().toISOString() };
+let screenerData: any = { screened_stocks: [] };
+
+try {
+  const apiJson = await Astro.glob('../../data/api/current.json');
+  if (apiJson.length > 0) apiData = apiJson[0].default || apiJson[0];
+} catch { /* ignore */ }
+
+try {
+  const screenerJson = await Astro.glob('../../data/api/screener_latest.json');
+  if (screenerJson.length > 0) screenerData = screenerJson[0].default || screenerJson[0];
+} catch { /* ignore */ }
+
+const zoneColors: Record<string, string> = {
+  extreme_buy: '#00C853',
+  strong_buy: '#4CAF50',
+  buy_lean: '#8BC34A',
+  neutral: '#FFC107',
+  sell_lean: '#FF9800',
+  strong_sell: '#F44336',
+  extreme_sell: '#B71C1C',
+};
+
+const zoneColor = zoneColors[apiData.zone] || '#FFC107';
+const topStocks = (screenerData.screened_stocks || []).slice(0, 5);
+---
+
+<Layout title="IMTI Dashboard — India Market Timing Index">
+  <div style="display:grid;grid-template-columns:1fr;gap:24px;">
+    <!-- Hero Score Card -->
+    <div class="card" style="text-align:center;padding:40px 20px;">
+      <h1 style="font-size:14px;text-transform:uppercase;letter-spacing:2px;color:var(--text-secondary);margin-bottom:16px;">
+        India Market Timing Index
+      </h1>
+      <div style="font-size:72px;font-weight:800;color:{zoneColor};line-height:1;">
+        {apiData.score?.toFixed(1) || '50.0'}
+      </div>
+      <div style="margin-top:12px;font-size:18px;font-weight:600;color:{zoneColor};">
+        {apiData.zone?.replace('_', ' ').toUpperCase() || 'NEUTRAL'}
+      </div>
+      <div style="margin-top:8px;font-size:14px;color:var(--text-secondary);">
+        Action: <strong style="color:var(--text-primary);">{apiData.action || 'NEUTRAL'}</strong> |
+        Confidence: {(apiData.confidence * 100)?.toFixed(0) || 50}%
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);">
+        Last updated: {new Date(apiData.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+      </div>
+    </div>
+
+    <!-- Key Stats Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Nifty 50 PE</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text-primary);margin-top:4px;">
+          {apiData.indicators?.nifty_pe?.toFixed(2) || '--'}
+        </div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">India VIX</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text-primary);margin-top:4px;">
+          {apiData.indicators?.india_vix?.toFixed(2) || '--'}
+        </div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">FII Net Flow</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text-primary);margin-top:4px;">
+          {apiData.indicators?.fii_cash_net?.toFixed(0) || '--'} Cr
+        </div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;">Tickertape MMI</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text-primary);margin-top:4px;">
+          {apiData.indicators?.tickertape_mmi?.toFixed(1) || '--'}
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Stock Picks -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="font-size:18px;">🏆 Top Low PE/PB Picks</h2>
+        <a href="/screener/" class="btn" style="font-size:12px;padding:6px 14px;">View All →</a>
+      </div>
+      {topStocks.length === 0 ? (
+        <p style="color:var(--text-secondary);font-size:14px;">No stocks passed the fundamental filters. Market may be overvalued.</p>
+      ) : (
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>Sector</th>
+                <th>PE</th>
+                <th>PB</th>
+                <th>ROE</th>
+                <th>Analyst Buy</th>
+                <th>Upside</th>
+                <th>MTF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topStocks.map((s: any) => (
+                <tr>
+                  <td><strong>{s.symbol}</strong></td>
+                  <td>{s.sector}</td>
+                  <td>{s.pe_ratio || '-'}</td>
+                  <td>{s.pb_ratio || '-'}</td>
+                  <td>{s.roe_pct ? `${s.roe_pct}%` : '-'}</td>
+                  <td>{s.analyst_buy_pct?.toFixed(0)}%</td>
+                  <td>{s.target_upside_pct?.toFixed(0)}%</td>
+                  <td>
+                    <span class={`badge ${s.mtf_safety_tier <= 2 ? 'badge-green' : 'badge-amber'}`}>
+                      T{s.mtf_safety_tier}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+
+    <!-- Quick Links -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+      <a href="/blog/" class="card" style="text-decoration:none;display:block;">
+        <h3 style="font-size:16px;margin-bottom:8px;">📰 Hourly Blog</h3>
+        <p style="font-size:13px;color:var(--text-secondary);">Read the latest market updates, changelog, and stock analysis published every hour.</p>
+      </a>
+      <a href="/screener/" class="card" style="text-decoration:none;display:block;">
+        <h3 style="font-size:16px;margin-bottom:8px;">🔍 Stock Screener</h3>
+        <p style="font-size:13px;color:var(--text-secondary);">Fundamental screener for low PE/PB, MTF-safe large-cap Indian stocks.</p>
+      </a>
+      <a href="/disclaimer/" class="card" style="text-decoration:none;display:block;">
+        <h3 style="font-size:16px;margin-bottom:8px;">⚠️ Disclaimer</h3>
+        <p style="font-size:13px;color:var(--text-secondary);">Not investment advice. Read our SEBI-compliant disclaimer before acting.</p>
+      </a>
+    </div>
+  </div>
+</Layout>

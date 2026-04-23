@@ -1,0 +1,258 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "India Market Timing Index — AI-powered market timing signal for Indian equities" } = Astro.props;
+const siteUrl = "https://imti.pages.dev";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <meta name="theme-color" content="#0d1117" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={siteUrl} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="canonical" href={`${siteUrl}${Astro.url.pathname}`} />
+  <title>{title}</title>
+
+  <!-- AdSense (loads only after cookie consent) -->
+  <script is:inline data-ad-client="pub-xxxxxxxxxxxxxxxx" id="adsense-script">
+    (function() {
+      const consent = localStorage.getItem('cookie-consent-ads');
+      if (consent === 'true') {
+        const script = document.createElement('script');
+        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + document.currentScript.dataset.adClient;
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        document.head.appendChild(script);
+      }
+    })();
+  </script>
+
+  <!-- Firebase SDK (modular, loaded via CDN) -->
+  <script type="module" is:inline>
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // These will be replaced by env vars at build time via defineConfig
+    const firebaseConfig = {
+      apiKey: "__FIREBASE_API_KEY__",
+      authDomain: "__FIREBASE_AUTH_DOMAIN__",
+      projectId: "__FIREBASE_PROJECT_ID__",
+      storageBucket: "__FIREBASE_STORAGE_BUCKET__",
+      messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
+      appId: "__FIREBASE_APP_ID__",
+      measurementId: "__FIREBASE_MEASUREMENT_ID__",
+    };
+
+    let app, auth, db;
+    try {
+      if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('__')) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+      }
+    } catch (e) {
+      console.warn('Firebase init failed:', e);
+    }
+
+    window._imtiFirebase = { app, auth, db, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs };
+  </script>
+
+  <style is:global>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-amber: #d29922;
+      --accent-blue: #58a6ff;
+      --border: #30363d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent-blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: var(--border); }
+    .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+    .badge-red { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+    .badge-amber { background: rgba(210,153,34,0.15); color: var(--accent-amber); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <nav style="border-bottom:1px solid var(--border);background:var(--bg-secondary);position:sticky;top:0;z-index:100;">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;height:60px;">
+      <a href="/" style="font-size:18px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+        <span style="font-size:24px;">📊</span> IMTI
+      </a>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="/blog/" style="font-size:14px;color:var(--text-secondary);">Blog</a>
+        <a href="/screener/" style="font-size:14px;color:var(--text-secondary);">Screener</a>
+        <a href="/about/" style="font-size:14px;color:var(--text-secondary);">About</a>
+        <button id="auth-btn" class="btn" style="font-size:13px;padding:6px 14px;">
+          <span>Sign In</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Cookie Consent Banner -->
+  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-secondary);border-top:1px solid var(--border);padding:16px;z-index:200;">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:13px;color:var(--text-secondary);max-width:700px;">
+        We use cookies for analytics and personalized ads. By continuing, you agree to our <a href="/privacy/">Privacy Policy</a> and <a href="/cookie-policy/">Cookie Policy</a>.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="cookieConsent.set(false)" class="btn" style="font-size:12px;padding:6px 12px;">Essential Only</button>
+        <button onclick="cookieConsent.set(true)" class="btn btn-primary" style="font-size:12px;padding:6px 12px;">Accept All</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container" style="padding-top:24px;padding-bottom:48px;">
+    <slot />
+  </main>
+
+  <footer style="border-top:1px solid var(--border);padding:32px 0;margin-top:48px;">
+    <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;font-size:13px;color:var(--text-secondary);">
+      <div>
+        <strong style="color:var(--text-primary);display:block;margin-bottom:8px;">IMTI</strong>
+        India Market Timing Index — AI-powered fundamental analysis for conservative Indian investors.
+      </div>
+      <div>
+        <strong style="color:var(--text-primary);display:block;margin-bottom:8px;">Legal</strong>
+        <a href="/privacy/">Privacy Policy</a><br/>
+        <a href="/terms/">Terms of Service</a><br/>
+        <a href="/disclaimer/">Disclaimer</a><br/>
+        <a href="/cookie-policy/">Cookie Policy</a>
+      </div>
+      <div>
+        <strong style="color:var(--text-primary);display:block;margin-bottom:8px;">Contact</strong>
+        <a href="mailto:support@imti.in">support@imti.in</a><br/>
+        <a href="mailto:hi@imti.in">hi@imti.in</a>
+      </div>
+    </div>
+    <div class="container" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-secondary);text-align:center;">
+      © {new Date().getFullYear()} IMTI. Not investment advice. SEBI disclaimer applies.
+    </div>
+  </footer>
+
+  <script is:inline>
+    // Cookie Consent Manager
+    window.cookieConsent = {
+      get() {
+        return localStorage.getItem('cookie-consent');
+      },
+      set(allowed) {
+        localStorage.setItem('cookie-consent', allowed ? 'all' : 'essential');
+        localStorage.setItem('cookie-consent-ads', allowed ? 'true' : 'false');
+        document.getElementById('cookie-banner').style.display = 'none';
+        if (allowed) {
+          // Load AdSense now
+          const adClient = document.getElementById('adsense-script')?.dataset?.adClient;
+          if (adClient && adClient !== 'pub-xxxxxxxxxxxxxxxx') {
+            const s = document.createElement('script');
+            s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + adClient;
+            s.async = true;
+            s.crossOrigin = 'anonymous';
+            document.head.appendChild(s);
+          }
+        }
+      },
+      init() {
+        if (!this.get()) {
+          document.getElementById('cookie-banner').style.display = 'block';
+        }
+      }
+    };
+    cookieConsent.init();
+
+    // Firebase Auth UI
+    (async function() {
+      const authBtn = document.getElementById('auth-btn');
+      if (!authBtn || !window._imtiFirebase?.auth) {
+        authBtn && (authBtn.style.display = 'none');
+        return;
+      }
+
+      const { auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, db, doc, setDoc, getDoc } = window._imtiFirebase;
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          authBtn.innerHTML = `<img src="${user.photoURL}" style="width:24px;height:24px;border-radius:50%;" alt=""> <span style="display:none;">Sign Out</span>`;
+          authBtn.onclick = () => signOut(auth);
+          // Save user to Firestore
+          if (db) {
+            const ref = doc(db, 'users', user.uid);
+            setDoc(ref, {
+              email: user.email,
+              name: user.displayName,
+              photoURL: user.photoURL,
+              lastLogin: new Date().toISOString(),
+            }, { merge: true });
+          }
+        } else {
+          authBtn.innerHTML = '<span>Sign In</span>';
+          authBtn.onclick = () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(e => console.error(e));
+          };
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

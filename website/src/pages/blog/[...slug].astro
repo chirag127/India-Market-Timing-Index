@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const posts = (import.meta as any).glob('../../content/blog/**/*.md', { eager: true });
+  const paths: { params: { slug: string }; props: { post: any } }[] = [];
+
+  for (const path in posts) {
+    const mod = posts[path] as any;
+    const slug = path
+      .replace('../../content/blog/', '')
+      .replace('.md', '')
+      .replace(/\\/g, '/');
+    paths.push({
+      params: { slug },
+      props: { post: mod },
+    });
+  }
+
+  return paths;
+}
+
+const { post } = Astro.props;
+const { Content, frontmatter } = post;
+---
+
+<Layout title={frontmatter.title || 'IMTI Blog Post'} description={frontmatter.description || ''}>
+  <div class="card" style="max-width:900px;">
+    <div style="margin-bottom:16px;">
+      <a href="/blog/" class="btn" style="font-size:12px;padding:4px 12px;">← Back to Blog</a>
+    </div>
+    <article style="line-height:1.8;">
+      <Content />
+    </article>
+  </div>
+</Layout>

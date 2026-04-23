@@ -1,0 +1,103 @@
+name: Hourly Pipeline
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Every hour UTC
+  workflow_dispatch:
+
+env:
+  IMTI_ENABLE_EMAIL: ${{ secrets.IMTI_ENABLE_EMAIL }}
+  IMTI_ENABLE_LLM: ${{ secrets.IMTI_ENABLE_LLM }}
+  IMTI_ENABLE_DEPLOY: ${{ secrets.IMTI_ENABLE_DEPLOY }}
+  IMTI_ENABLE_NEWS_SEARCH: ${{ secrets.IMTI_ENABLE_NEWS_SEARCH }}
+  IMTI_ENABLE_BLOG_GENERATION: ${{ secrets.IMTI_ENABLE_BLOG_GENERATION }}
+  IMTI_ENABLE_STOCK_SCREENER: ${{ secrets.IMTI_ENABLE_STOCK_SCREENER }}
+  IMTI_ENABLE_ANALYST_RATINGS: ${{ secrets.IMTI_ENABLE_ANALYST_RATINGS }}
+  IMTI_ENABLE_MTF_RISK_CHECK: ${{ secrets.IMTI_ENABLE_MTF_RISK_CHECK }}
+  IMTI_LOG_LEVEL: ${{ secrets.IMTI_LOG_LEVEL }}
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  LLM_API_BASE_URL: ${{ secrets.LLM_API_BASE_URL }}
+  LLM_MODEL: ${{ secrets.LLM_MODEL }}
+  LLM_MAX_TOKENS: ${{ secrets.LLM_MAX_TOKENS }}
+  FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+  FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+  BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+  EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+  EMAIL_TO: ${{ secrets.EMAIL_TO }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  CLOUDFLARE_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+  HOSTING_PROVIDER: ${{ secrets.HOSTING_PROVIDER }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  hourly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Run hourly pipeline
+        run: python -m imti.cli.main hourly
+        continue-on-error: true
+
+      - name: Run stock screener
+        if: env.IMTI_ENABLE_STOCK_SCREENER == 'true'
+        run: python -c "from imti.sources.screener import StockScreener; StockScreener().run_screen()"
+        continue-on-error: true
+
+      - name: Generate hourly blog
+        if: env.IMTI_ENABLE_BLOG_GENERATION == 'true'
+        run: python -c "from imti.outputs.blog_generator import generate_hourly_blog; generate_hourly_blog(50, 0.5, None)"
+        continue-on-error: true
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ website/src/content/blog/
+          git diff --cached --quiet || git commit -m "📊 Hourly update: $(date -u +%Y-%m-%d-%H:%M UTC)"
+          git push
+        continue-on-error: true
+
+  deploy:
+    needs: hourly
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm install
+
+      - name: Build website
+        working-directory: website
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        if: env.HOSTING_PROVIDER == 'cloudflare_pages'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy website/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }}

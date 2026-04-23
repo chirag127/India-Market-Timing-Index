@@ -1,0 +1,53 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Discover all blog posts from content/blog/
+const posts: { date: string; time: string; path: string; title: string }[] = [];
+
+const modules = (import.meta as any).glob('../../content/blog/**/*.md', { eager: true });
+for (const path in modules) {
+  const mod = modules[path] as any;
+  const frontmatter = mod.frontmatter || {};
+  const dateMatch = path.match(/blog\/([^/]+)/);
+  const date = dateMatch ? dateMatch[1] : '';
+  const timeMatch = path.match(/(\d{2}-\d{2})\.md$/);
+  const time = timeMatch ? timeMatch[1].replace('-', ':') : '';
+  posts.push({
+    date,
+    time,
+    path: path.replace('../../content/blog/', '/blog/').replace('.md', '/'),
+    title: frontmatter.title || `Update ${date} ${time}`,
+  });
+}
+
+posts.sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+---
+
+<Layout title="IMTI Blog — Hourly Market Updates">
+  <h1 style="font-size:28px;margin-bottom:8px;">📰 IMTI Blog</h1>
+  <p style="color:var(--text-secondary);margin-bottom:24px;">
+    Hourly market updates with changelog, low PE/PB stock picks, and AI analysis.
+  </p>
+
+  {posts.length === 0 ? (
+    <div class="card" style="text-align:center;padding:48px;">
+      <p style="color:var(--text-secondary);">No blog posts yet. They will appear here after the first pipeline run.</p>
+    </div>
+  ) : (
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      {posts.map((post) => (
+        <a href={post.path} class="card" style="text-decoration:none;display:block;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div>
+              <h3 style="font-size:16px;margin-bottom:4px;">{post.title}</h3>
+              <span style="font-size:12px;color:var(--text-secondary);">
+                {post.date} {post.time} IST
+              </span>
+            </div>
+            <span class="btn" style="font-size:12px;padding:4px 12px;">Read →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
+</Layout>

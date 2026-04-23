@@ -1,0 +1,112 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+let screenerData: any = { screened_stocks: [], filters: {} };
+try {
+  const data = await Astro.glob('../../data/api/screener_latest.json');
+  if (data.length > 0) screenerData = data[0].default || data[0];
+} catch { /* ignore */ }
+
+const stocks = screenerData.screened_stocks || [];
+const filters = screenerData.filters || {};
+---
+
+<Layout title="IMTI Stock Screener — Low PE/PB Value Picks">
+  <h1 style="font-size:28px;margin-bottom:8px;">🔍 Low PE/PB Stock Screener</h1>
+  <p style="color:var(--text-secondary);margin-bottom:24px;">
+    Fundamental screener for large-cap Indian stocks. We only show stocks that pass ALL filters.
+  </p>
+
+  <!-- Filters Card -->
+  <div class="card" style="margin-bottom:24px;">
+    <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:12px;">
+      Active Filters
+    </h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <span class="badge badge-green">{`PE < ${filters.max_pe || 20}`}</span>
+      <span class="badge badge-green">{`PB < ${filters.max_pb || 3}`}</span>
+      <span class="badge badge-green">{`ROE > ${(filters.min_roe * 100)?.toFixed(0) || 12}%`}</span>
+      <span class="badge badge-green">{`D/E < ${filters.max_debt_equity || 1}`}</span>
+      <span class="badge badge-green">{`Analyst Buy > ${(filters.min_analyst_buy_pct * 100)?.toFixed(0) || 40}%`}</span>
+      <span class="badge badge-green">{`Upside > ${(filters.min_target_upside_pct * 100)?.toFixed(0) || 15}%`}</span>
+      <span class="badge badge-green">MTF Safe Only</span>
+      <span class="badge badge-green">Large Cap Only</span>
+    </div>
+  </div>
+
+  {stocks.length === 0 ? (
+    <div class="card" style="text-align:center;padding:48px;">
+      <p style="color:var(--text-secondary);">No stocks passed all filters. The market may be overvalued or data is unavailable.</p>
+    </div>
+  ) : (
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Stock</th>
+            <th>Sector</th>
+            <th>Price</th>
+            <th>PE</th>
+            <th>PB</th>
+            <th>ROE</th>
+            <th>D/E</th>
+            <th>FCF (Cr)</th>
+            <th>Analyst Buy</th>
+            <th>Upside</th>
+            <th>MTF Tier</th>
+            <th>Score</th>
+            <th>Rec</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stocks.map((s: any, i: number) => (
+            <tr>
+              <td>{i + 1}</td>
+              <td><strong>{s.symbol}</strong><br/><span style="font-size:11px;color:var(--text-secondary);">{s.name}</span></td>
+              <td>{s.sector}</td>
+              <td>₹{s.price?.toLocaleString('en-IN')}</td>
+              <td>{s.pe_ratio || '-'}</td>
+              <td>{s.pb_ratio || '-'}</td>
+              <td>{s.roe_pct ? `${s.roe_pct}%` : '-'}</td>
+              <td>{s.debt_to_equity}</td>
+              <td>{s.fcf_crores ? `₹${s.fcf_crores.toLocaleString('en-IN')}` : '-'}</td>
+              <td>{s.analyst_buy_pct?.toFixed(0)}%</td>
+              <td>{s.target_upside_pct?.toFixed(0)}%</td>
+              <td>
+                <span class={`badge ${s.mtf_safety_tier <= 2 ? 'badge-green' : s.mtf_safety_tier === 3 ? 'badge-amber' : 'badge-red'}`}>
+                  T{s.mtf_safety_tier}
+                </span>
+              </td>
+              <td><strong>{s.composite_score?.toFixed(1)}</strong></td>
+              <td>
+                <span class={`badge ${s.recommendation === 'STRONG_BUY' ? 'badge-green' : s.recommendation === 'BUY' ? 'badge-green' : s.recommendation === 'ACCUMULATE' ? 'badge-amber' : 'badge-red'}`}>
+                  {s.recommendation}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  <div class="card" style="margin-top:24px;">
+    <h3 style="font-size:16px;margin-bottom:12px;">📊 Methodology</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+      <strong>Value Score (40%):</strong> Lower PE and PB = higher score. We inverse-normalize so the cheapest stocks score highest.
+    </p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+      <strong>Quality Score (25%):</strong> Higher ROE and lower debt/equity = higher score.
+    </p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+      <strong>Analyst Score (20%):</strong> Higher buy percentage and target upside = higher score.
+    </p>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">
+      <strong>Safety Score (15%):</strong> Lower historical drawdown and larger market cap = higher score.
+    </p>
+    <p style="font-size:13px;color:var(--text-secondary);">
+      <strong>Momentum Bonus:</strong> Small bonus for positive 6-month momentum (confirmation, not primary signal).
+    </p>
+  </div>
+</Layout>

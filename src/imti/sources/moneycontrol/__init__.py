@@ -1,0 +1,1 @@
+"""Moneycontrol news source connectors."""

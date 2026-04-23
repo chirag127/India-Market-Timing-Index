@@ -1,0 +1,49 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="About — IMTI" description="About the India Market Timing Index">
+  <div class="card" style="max-width:800px;">
+    <h1 style="font-size:24px;margin-bottom:16px;">About IMTI</h1>
+
+    <p style="margin-bottom:16px;">
+      The <strong>India Market Timing Index (IMTI)</strong> is an AI-powered, fundamental-only market timing system designed for conservative Indian investors who use MTF (Margin Trading Facility) or pay-later facilities.
+    </p>
+
+    <h2 style="font-size:18px;margin:24px 0 12px;">Our Philosophy</h2>
+    <ul style="margin-left:20px;color:var(--text-secondary);margin-bottom:16px;">
+      <li><strong>Fundamental-First:</strong> We ignore technical indicators. Only PE, PB, earnings yield, macro data, and sentiment matter.</li>
+      <li><strong>Conservative:</strong> Most of the time the signal is NEUTRAL or SELL. We only buy when valuations are deeply attractive.</li>
+      <li><strong>Low PE/PB Only:</strong> We only recommend stocks with PE under 20 and PB under 3, with strong balance sheets.</li>
+      <li><strong>MTF-Aware:</strong> With 3x leverage, a 10% stock fall = 30% capital loss. We only recommend Tier 1 and Tier 2 safety stocks.</li>
+    </ul>
+
+    <h2 style="font-size:18px;margin:24px 0 12px;">How It Works</h2>
+    <ol style="margin-left:20px;color:var(--text-secondary);margin-bottom:16px;">
+      <li><strong>Data Collection:</strong> Every hour, we scrape 30+ indicators from free sources (NSE, yfinance, Tickertape, RBI, etc.)</li>
+      <li><strong>Scoring:</strong> An ML model (XGBoost) generates a 0-100 danger score. Low score = buy opportunity, high score = danger.</li>
+      <li><strong>Stock Screening:</strong> We run a fundamental screener on Nifty 50 + Next 50 stocks, filtering for low PE/PB, positive FCF, and MTF safety.</li>
+      <li><strong>Blog Generation:</strong> An hourly blog post is auto-generated with the score, changelog, stock picks, and LLM news analysis.</li>
+      <li><strong>Deployment:</strong> Everything is deployed automatically to Cloudflare Pages via GitHub Actions.</li>
+    </ol>
+
+    <h2 style="font-size:18px;margin:24px 0 12px;">Technology Stack</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
+      <div class="card" style="padding:12px;">
+        <strong>Python</strong><br/><span style="font-size:12px;color:var(--text-secondary);">Data pipeline, ML, scraping</span>
+      </div>
+      <div class="card" style="padding:12px;">
+        <strong>Astro</strong><br/><span style="font-size:12px;color:var(--text-secondary);">Static site generator</span>
+      </div>
+      <div class="card" style="padding:12px;">
+        <strong>Firebase</strong><br/><span style="font-size:12px;color:var(--text-secondary);">Auth + Firestore (serverless)</span>
+      </div>
+      <div class="card" style="padding:12px;">
+        <strong>Cloudflare</strong><br/><span style="font-size:12px;color:var(--text-secondary);">Hosting + CDN (free tier)</span>
+      </div>
+    </div>
+
+    <h2 style="font-size:18px;margin:24px 0 12px;">Contact</h2>
+    <p>Email: <a href="mailto:hi@imti.in">hi@imti.in</a> | <a href="mailto:support@imti.in">support@imti.in</a></p>
+  </div>
+</Layout>

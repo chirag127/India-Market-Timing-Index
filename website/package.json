@@ -1,0 +1,18 @@
+{
+  "name": "imti-website",
+  "version": "1.0.0",
+  "description": "India Market Timing Index — Static Website",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "wrangler pages deploy dist"
+  },
+  "dependencies": {
+    "astro": "^6.1.9"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
